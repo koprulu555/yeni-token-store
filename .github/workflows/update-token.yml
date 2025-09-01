@@ -31,6 +31,11 @@ jobs:
         import json
         from datetime import datetime, timedelta
         import time
+        import urllib3
+        from urllib3.exceptions import InsecureRequestWarning
+
+        # SSL uyarılarını gizle
+        urllib3.disable_warnings(InsecureRequestWarning)
 
         def update_token():
             api_url = "https://core-api.kablowebtv.com/api/channels"
@@ -44,42 +49,99 @@ jobs:
             }
 
             try:
+                print("API'ye istek yapılıyor...")
                 response = requests.get(api_url, headers=headers, timeout=30, verify=False)
-                response.raise_for_status()
+                print(f"HTTP Status: {response.status_code}")
                 
-                data = response.json()
+                if response.status_code != 200:
+                    raise Exception(f"API isteği başarısız: HTTP {response.status_code}")
                 
-                if not data or not data.get('IsSucceeded') or not data.get('Data', {}).get('AllChannels'):
-                    raise Exception("Geçersiz API yanıtı")
+                try:
+                    data = response.json()
+                except json.JSONDecodeError:
+                    raise Exception("JSON parse hatası: Geçersiz JSON yanıtı")
+                
+                print("API yanıtı alındı, veri yapısı kontrol ediliyor...")
+                
+                # Daha güvenli veri yapısı kontrolü
+                if not data:
+                    raise Exception("Boş API yanıtı")
+                
+                if not isinstance(data, dict):
+                    raise Exception(f"Beklenmeyen API yanıt formatı: {type(data)}")
+                
+                if not data.get('IsSucceeded'):
+                    raise Exception(f"API başarısız: {data.get('Message', 'Bilinmeyen hata')}")
+                
+                if not data.get('Data') or not isinstance(data['Data'], dict):
+                    raise Exception("Geçersiz Data yapısı")
+                
+                all_channels = data['Data'].get('AllChannels')
+                if not all_channels or not isinstance(all_channels, list):
+                    raise Exception("AllChannels bulunamadı veya liste değil")
+                
+                print(f"{len(all_channels)} kanal bulundu, ATV aranıyor...")
                 
                 # ATV kanalını bul
                 atv_channel = None
-                for channel in data['Data']['AllChannels']:
-                    stream_url = channel.get('StreamData', {}).get('HlsStreamUrl', '')
-                    if 'atv_stream' in stream_url:
+                for channel in all_channels:
+                    if not isinstance(channel, dict):
+                        continue
+                    
+                    stream_data = channel.get('StreamData', {})
+                    if not isinstance(stream_data, dict):
+                        continue
+                    
+                    stream_url = stream_data.get('HlsStreamUrl', '')
+                    if isinstance(stream_url, str) and 'atv_stream' in stream_url:
                         atv_channel = channel
                         break
                 
                 if not atv_channel:
-                    raise Exception("ATV kanalı bulunamadı")
+                    # Tüm kanal isimlerini listele (debug için)
+                    channel_names = []
+                    for channel in all_channels:
+                        if isinstance(channel, dict):
+                            channel_names.append(channel.get('Name', 'Unknown'))
+                    raise Exception(f"ATV kanalı bulunamadı. Mevcut kanallar: {', '.join(channel_names[:10])}{'...' if len(channel_names) > 10 else ''}")
                 
-                stream_url = atv_channel['StreamData']['HlsStreamUrl']
+                stream_data = atv_channel.get('StreamData', {})
+                stream_url = stream_data.get('HlsStreamUrl', '')
+                
+                if not stream_url:
+                    raise Exception("Stream URL bulunamadı")
+                
                 prefix = "https://ottcdn.kablowebtv.net/live_turksat_sub3/atv_stream/index.m3u8?wmsAuthSign="
                 
                 if not stream_url.startswith(prefix):
-                    raise Exception("ATV URL'si beklenen formatta değil")
+                    raise Exception(f"ATV URL'si beklenen formatta değil: {stream_url[:100]}...")
                 
                 # Token'i al
                 token = stream_url[len(prefix):]
                 
+                if not token:
+                    raise Exception("Token bulunamadı")
+                
                 # Token'i decode et
-                decoded_token = base64.b64decode(token).decode('utf-8')
+                try:
+                    decoded_token = base64.b64decode(token).decode('utf-8')
+                except Exception as e:
+                    raise Exception(f"Token decode edilemedi: {str(e)}")
+                
+                print("Token decode edildi, parametreler ayrıştırılıyor...")
                 
                 # Token parametrelerini parse et
                 token_params = {}
                 for param in decoded_token.split('&'):
-                    key, value = param.split('=', 1)
-                    token_params[key] = value
+                    if '=' in param:
+                        key, value = param.split('=', 1)
+                        token_params[key] = value
+                
+                # Gerekli parametreleri kontrol et
+                required_params = ['server_time', 'hash_value', 'validminutes', 'id', 'client_ip', 'checkip']
+                for param in required_params:
+                    if param not in token_params:
+                        raise Exception(f"Gerekli parametre eksik: {param}")
                 
                 # Yeni zamanı ayarla (Türkiye saati UTC+3)
                 turkey_time = datetime.utcnow() + timedelta(hours=3)
@@ -103,14 +165,15 @@ jobs:
         if __name__ == "__main__":
             try:
                 new_token = update_token()
-                print(f"Token başarıyla güncellendi: {new_token}")
+                print(f"✓ Token başarıyla güncellendi")
+                print(f"Token: {new_token}")
                 
                 # Decode edilmiş token'i de göster
                 decoded = base64.b64decode(new_token).decode('utf-8')
-                print(f"Decode edilmiş token: {decoded}")
+                print(f"Decode edilmiş: {decoded}")
                 
             except Exception as e:
-                print(f"HATA: {str(e)}")
+                print(f"✗ HATA: {str(e)}")
                 exit(1)
         EOF
 
