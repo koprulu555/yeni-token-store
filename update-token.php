@@ -6,10 +6,9 @@ function updateToken() {
         "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         "Referer: https://tvheryerde.com",
         "Origin: https://tvheryerde.com",
-        "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw",
+        "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaHI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw",
         "Accept: application/json, text/plain, */*",
         "Accept-Language: tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-        "Accept-Encoding: gzip, deflate, br",
         "Connection: keep-alive"
     ];
 
@@ -22,7 +21,6 @@ function updateToken() {
     curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
     curl_setopt($ch, CURLOPT_TIMEOUT, 30);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_ENCODING, 'gzip');
     
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -47,7 +45,7 @@ function updateToken() {
     }
 
     if (!$data || !isset($data['IsSucceeded']) || !$data['IsSucceeded'] || !isset($data['Data']['AllChannels'])) {
-        throw new Exception("Geçersiz API yanıtı: " . print_r($data, true));
+        throw new Exception("Geçersiz API yanıtı");
     }
 
     // ATV kanalını bul
@@ -61,41 +59,48 @@ function updateToken() {
     }
 
     if (!$atvChannel) {
-        throw new Exception("ATV kanalı bulunamadı. Mevcut kanallar: " . count($data['Data']['AllChannels']));
+        throw new Exception("ATV kanalı bulunamadı");
     }
 
     $streamUrl = $atvChannel['StreamData']['HlsStreamUrl'];
     $prefix = "https://ottcdn.kablowebtv.net/live_turksat_sub3/atv_stream/index.m3u8?wmsAuthSign=";
     
     if (strpos($streamUrl, $prefix) !== 0) {
-        throw new Exception("ATV URL'si beklenen formatta değil: " . $streamUrl);
+        throw new Exception("ATV URL'si beklenen formatta değil");
     }
 
     // Token'i al
-    $token = substr($streamUrl, strlen($prefix));
+    $originalToken = substr($streamUrl, strlen($prefix));
     
-    // Token'i decode et
-    $decodedToken = base64_decode($token);
-    if (!$decodedToken) {
-        throw new Exception("Token decode edilemedi: " . $token);
-    }
-
-    // Token parametrelerini parse et
-    parse_str($decodedToken, $tokenParams);
-
-    if (!isset($tokenParams['server_time']) || !isset($tokenParams['client_ip'])) {
-        throw new Exception("Token parametreleri eksik: " . $decodedToken);
-    }
-
-    // Yeni zamanı ve IP'yi ayarla
-    $tokenParams['server_time'] = gmdate('m/d/Y h:i:s A', time() + 3 * 3600); // Türkiye saati (UTC+3)
-    $tokenParams['client_ip'] = '176.88.30.202'; // Sabit IP
+    // Orijinal token'i decode et
+    $decodedOriginalToken = base64_decode($originalToken);
     
-    // Yeni token string'ini oluştur
-    $newTokenString = http_build_query($tokenParams);
+    // Orijinal token parametrelerini parse et (URL decode yapmadan)
+    parse_str($decodedOriginalToken, $originalTokenParams);
+    
+    // Hash value'yi al (orijinal formatta tutalım)
+    $hashValue = $originalTokenParams['hash_value'];
+    
+    // Yeni zamanı ve IP'yi ayarla (URL encoding OLMADAN)
+    $serverTime = gmdate('m/d/Y h:i:s A', time() + 3 * 3600); // Türkiye saati (UTC+3)
+    $clientIp = '176.88.30.202'; // Sabit IP
+    
+    // Yeni token string'ini MANUEL olarak oluştur (URL encoding YAPMADAN)
+    $newTokenString = "server_time=" . $serverTime . 
+                     "&hash_value=" . $hashValue . 
+                     "&validminutes=2880" . 
+                     "&id=9f2eaa54-5436-44e8-a927-434669d1551a" . 
+                     "&client_ip=" . $clientIp . 
+                     "&checkip=true";
     
     // Yeni token'i base64 ile encode et
     $newToken = base64_encode($newTokenString);
+    
+    // Debug için
+    echo "Orijinal Token: " . $originalToken . "\n";
+    echo "Orijinal Decoded: " . $decodedOriginalToken . "\n";
+    echo "Yeni Token String: " . $newTokenString . "\n";
+    echo "Yeni Token: " . $newToken . "\n";
     
     // Token'i dosyaya yaz
     if (file_put_contents('token.txt', $newToken) === false) {
@@ -107,11 +112,7 @@ function updateToken() {
 
 try {
     $newToken = updateToken();
-    echo "Token başarıyla güncellendi: " . $newToken . "\n";
-    
-    // Decode edilmiş token'i de göster
-    $decoded = base64_decode($newToken);
-    echo "Decode edilmiş token: " . $decoded . "\n";
+    echo "Token başarıyla güncellendi!\n";
     
 } catch (Exception $e) {
     echo "HATA: " . $e->getMessage() . "\n";
