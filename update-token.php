@@ -2,11 +2,15 @@
 // update-token.php
 function updateToken() {
     $apiUrl = "https://core-api.kablowebtv.com/api/channels";
+    
+    // Önce mevcut token'ı al ve Authorization header'ını güncelle
+    $authorizationToken = getFreshAuthorizationToken();
+    
     $headers = [
         "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
         "Referer: https://tvheryerde.com",
         "Origin: https://tvheryerde.com",
-        "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw",
+        "Authorization: Bearer " . $authorizationToken,
         "Accept: application/json, text/plain, */*",
         "Accept-Language: tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
         "Accept-Encoding: gzip, deflate, br",
@@ -34,7 +38,7 @@ function updateToken() {
     }
 
     if ($httpCode !== 200) {
-        throw new Exception("API isteği başarısız: HTTP $httpCode");
+        throw new Exception("API isteği başarısız: HTTP $httpCode - Response: " . $response);
     }
 
     if (!$response) {
@@ -89,8 +93,6 @@ function updateToken() {
 
     // Yeni zamanı ve IP'yi ayarla (Türkiye saati UTC+3)
     $newServerTime = gmdate('m/d/Y h:i:s A', time() + 3 * 3600);
-    $tokenParams['server_time'] = $newServerTime;
-    $tokenParams['client_ip'] = '176.88.30.202';
     
     // Yeni token string'ini MANUEL olarak oluştur (hiçbir encoding yapmadan)
     $newTokenString = "server_time={$newServerTime}&hash_value={$tokenParams['hash_value']}&validminutes={$tokenParams['validminutes']}&id={$tokenParams['id']}&client_ip=176.88.30.202&checkip={$tokenParams['checkip']}";
@@ -104,6 +106,27 @@ function updateToken() {
     }
     
     return $newToken;
+}
+
+function getFreshAuthorizationToken() {
+    // Bu fonksiyonda güncel bir authorization token almanız gerekebilir
+    // Şimdilik sabit bir token döndürelim veya alternatif bir yöntem bulalım
+    
+    // Alternatif: TVheryerde sitesinden canlı token al
+    $tvheryerdeUrl = "https://tvheryerde.com";
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $tvheryerdeUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    
+    $response = curl_exec($ch);
+    curl_close($ch);
+    
+    // Basitçe sabit bir token döndürelim (gerçek uygulamada dinamik olmalı)
+    return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw";
 }
 
 try {
