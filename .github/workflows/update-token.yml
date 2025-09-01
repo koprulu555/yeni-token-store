@@ -33,98 +33,89 @@ jobs:
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        def get_fresh_authorization():
-            """TVheryerde sitesinden canlı token al"""
-            try:
-                response = requests.get('https://tvheryerde.com', timeout=10, verify=False)
-                # Basitçe sabit bir token döndürelim (gerçekte dinamik olmalı)
-                return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzNDY1MzY5OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw"
-            except:
-                return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRmIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw"
-
         def update_token():
-            auth_token = get_fresh_authorization()
-            
+            # API bilgileri - TAMAMEN ORJİNAL
             api_url = "https://core-api.kablowebtv.com/api/channels"
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
                 "Referer": "https://tvheryerde.com",
                 "Origin": "https://tvheryerde.com",
-                "Authorization": f"Bearer {auth_token}",
+                "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw",
                 "Accept": "application/json, text/plain, */*",
+                "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Connection": "keep-alive"
             }
 
             try:
-                print("API'ye istek yapılıyor...")
+                # API'den token al
                 response = requests.get(api_url, headers=headers, timeout=30, verify=False)
-                print(f"HTTP Status: {response.status_code}")
                 
                 if response.status_code != 200:
-                    # Fallback: Eski çalışan token'ı kullan
-                    print("API hatası, eski token formatı kullanılıyor...")
-                    old_token = "c2VydmVyX3RpbWU9MDkvMDEvMjAyNSAwNDowNToxMyBBTSZoYXNoX3ZhbHVlPTdOb0RER051SkdpbkdIanN2ZUlKR2c9PSZ2YWxpZG1pbnV0ZXM9Mjg4MCZpZD05ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEmY2xpZW50X2lwPTE3Ni44OC4zMC4yMDImY2hlY2tpcD10cnVl"
-                    decoded = base64.b64decode(old_token).decode('utf-8')
-                    params = {}
-                    for pair in decoded.split('&'):
-                        key, value = pair.split('=', 1)
-                        params[key] = value
-                    
-                    new_time = (datetime.utcnow() + timedelta(hours=3)).strftime('%m/%d/%Y %I:%M:%S %p')
-                    new_token_str = f"server_time={new_time}&hash_value={params['hash_value']}&validminutes={params['validminutes']}&id={params['id']}&client_ip=176.88.30.202&checkip={params['checkip']}"
-                    new_token = base64.b64encode(new_token_str.encode('utf-8')).decode('utf-8')
-                    
-                    with open('token.txt', 'w') as f:
-                        f.write(new_token)
-                    return new_token
+                    raise Exception(f"API HTTP {response.status_code}")
                 
                 data = response.json()
                 
+                if not data.get('IsSucceeded') or not data.get('Data', {}).get('AllChannels'):
+                    raise Exception("Geçersiz API yanıtı")
+                
                 # ATV kanalını bul
+                atv_channel = None
                 for channel in data['Data']['AllChannels']:
                     stream_url = channel.get('StreamData', {}).get('HlsStreamUrl', '')
-                    if 'atv_stream' in stream_url:
+                    if stream_url and 'atv_stream' in stream_url:
+                        atv_channel = channel
                         break
-                else:
+                
+                if not atv_channel:
                     raise Exception("ATV kanalı bulunamadı")
                 
-                # Token'i al ve işle
+                stream_url = atv_channel['StreamData']['HlsStreamUrl']
                 prefix = "https://ottcdn.kablowebtv.net/live_turksat_sub3/atv_stream/index.m3u8?wmsAuthSign="
+                
+                if not stream_url.startswith(prefix):
+                    raise Exception("URL formatı hatalı")
+                
+                # Token'i al
                 token = stream_url[len(prefix):]
                 
+                # Token'i decode et
                 decoded_token = base64.b64decode(token).decode('utf-8')
                 
+                # Parametreleri parse et
                 params = {}
                 for pair in decoded_token.split('&'):
                     key, value = pair.split('=', 1)
                     params[key] = value
                 
-                new_time = (datetime.utcnow() + timedelta(hours=3)).strftime('%m/%d/%Y %I:%M:%S %p')
-                new_token_str = f"server_time={new_time}&hash_value={params['hash_value']}&validminutes={params['validminutes']}&id={params['id']}&client_ip=176.88.30.202&checkip={params['checkip']}"
-                new_token = base64.b64encode(new_token_str.encode('utf-8')).decode('utf-8')
+                # SADECE IP ADRESİNİ DEĞİŞTİR, DİĞER HER ŞEYİ AYNI TUT
+                params['client_ip'] = '176.88.30.202'
                 
+                # Yeni token string'ini OLDUĞU GİBİ oluştur
+                new_token_string = f"server_time={params['server_time']}&hash_value={params['hash_value']}&validminutes={params['validminutes']}&id={params['id']}&client_ip={params['client_ip']}&checkip={params['checkip']}"
+                
+                # Base64 encode et - HİÇBİR DEĞİŞİKLİK YAPMADAN
+                new_token = base64.b64encode(new_token_string.encode('utf-8')).decode('utf-8')
+                
+                # Dosyaya yaz
                 with open('token.txt', 'w') as f:
                     f.write(new_token)
                 
                 return new_token
                 
             except Exception as e:
-                print(f"Hata: {e}")
-                # Fallback: Basit bir token oluştur
-                fallback_token = "c2VydmVyX3RpbWU9MDkvMDEvMjAyNSAwNTozMDowMCBBTSZoYXNoX3ZhbHVlPTdOb0RER051SkdpbkdIanN2ZUlKR2c9PSZ2YWxpZG1pbnV0ZXM9Mjg4MCZpZD05ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEmY2xpZW50X2lwPTE3Ni44OC4zMC4yMDImY2hlY2tpcD10cnVl"
-                with open('token.txt', 'w') as f:
-                    f.write(fallback_token)
-                return fallback_token
+                raise Exception(f"Hata: {str(e)}")
 
         try:
             token = update_token()
-            print("✓ Token güncellendi")
+            print("✓ Token başarıyla güncellendi")
             
-            # Test decode
+            # Kontrol
             decoded = base64.b64decode(token).decode('utf-8')
-            print("Decoded token çalışıyor:", "hash_value=" in decoded)
+            print("Decode edilmiş token:", decoded)
             
         except Exception as e:
-            print(f"✗ Kritik hata: {e}")
+            print(f"✗ Hata: {e}")
             exit(1)
         EOF
 
