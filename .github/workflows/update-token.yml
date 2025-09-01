@@ -29,26 +29,22 @@ jobs:
         import requests
         import base64
         import json
-        from datetime import datetime, timedelta
         import urllib3
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
         def update_token():
-            # API bilgileri - TAMAMEN ORJİNAL
+            # API bilgileri
             api_url = "https://core-api.kablowebtv.com/api/channels"
             headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
-                "Referer": "https://tvheryerde.com",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+                "Referer": "https://tvheryerde.com", 
                 "Origin": "https://tvheryerde.com",
                 "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw",
                 "Accept": "application/json, text/plain, */*",
-                "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Connection": "keep-alive"
             }
 
             try:
-                # API'den token al
+                # API'den veri al
                 response = requests.get(api_url, headers=headers, timeout=30, verify=False)
                 
                 if response.status_code != 200:
@@ -56,14 +52,28 @@ jobs:
                 
                 data = response.json()
                 
-                if not data.get('IsSucceeded') or not data.get('Data', {}).get('AllChannels'):
+                # GÜVENLİ veri kontrolü
+                if not data or not isinstance(data, dict):
                     raise Exception("Geçersiz API yanıtı")
                 
-                # ATV kanalını bul
+                if 'Data' not in data or not isinstance(data['Data'], dict):
+                    raise Exception("Data bulunamadı")
+                
+                if 'AllChannels' not in data['Data'] or not isinstance(data['Data']['AllChannels'], list):
+                    raise Exception("AllChannels bulunamadı")
+                
+                # ATV kanalını bul - GÜVENLİ şekilde
                 atv_channel = None
                 for channel in data['Data']['AllChannels']:
-                    stream_url = channel.get('StreamData', {}).get('HlsStreamUrl', '')
-                    if stream_url and 'atv_stream' in stream_url:
+                    if not isinstance(channel, dict):
+                        continue
+                    
+                    stream_data = channel.get('StreamData')
+                    if not isinstance(stream_data, dict):
+                        continue
+                    
+                    stream_url = stream_data.get('HlsStreamUrl', '')
+                    if isinstance(stream_url, str) and 'atv_stream' in stream_url:
                         atv_channel = channel
                         break
                 
@@ -85,16 +95,17 @@ jobs:
                 # Parametreleri parse et
                 params = {}
                 for pair in decoded_token.split('&'):
-                    key, value = pair.split('=', 1)
-                    params[key] = value
+                    if '=' in pair:
+                        key, value = pair.split('=', 1)
+                        params[key] = value
                 
-                # SADECE IP ADRESİNİ DEĞİŞTİR, DİĞER HER ŞEYİ AYNI TUT
+                # SADECE IP ADRESİNİ DEĞİŞTİR
                 params['client_ip'] = '176.88.30.202'
                 
                 # Yeni token string'ini OLDUĞU GİBİ oluştur
                 new_token_string = f"server_time={params['server_time']}&hash_value={params['hash_value']}&validminutes={params['validminutes']}&id={params['id']}&client_ip={params['client_ip']}&checkip={params['checkip']}"
                 
-                # Base64 encode et - HİÇBİR DEĞİŞİKLİK YAPMADAN
+                # Base64 encode et
                 new_token = base64.b64encode(new_token_string.encode('utf-8')).decode('utf-8')
                 
                 # Dosyaya yaz
@@ -104,7 +115,7 @@ jobs:
                 return new_token
                 
             except Exception as e:
-                raise Exception(f"Hata: {str(e)}")
+                raise Exception(f"API hatası: {str(e)}")
 
         try:
             token = update_token()
