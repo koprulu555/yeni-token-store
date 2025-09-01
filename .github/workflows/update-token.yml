@@ -35,7 +35,7 @@ jobs:
                 "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
                 "Referer: https://tvheryerde.com",
                 "Origin: https://tvheryerde.com",
-                "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiMS4wLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw",
+                "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbnYiOiJMSVZFIiwiaXBiIjoiMCIsImNnZCI6IjA5M2Q3MjBhLTUwMmMtNDFlZC1hODBmLTJiODE2OTg0ZmI5NSIsImNzaCI6IlRSS1NUIiwiZGN0IjoiRTFDNjQiLCJkaSI6Ijg5MTlmNjYwLTBhZGUtNGYwMS1hMTVlLTc2MDZjNjI4ZTc5MyIsInNnZCI6IjM5MTY0ZjIwLTZlZjUtNDRlZS04ZjAyLWEzODRjOTg1ZTY5MyIsInNwZ2QiOiI5ZjJlYWE1NC01NDM2LTQ0ZTgtYTkyNy00MzQ2NjlkMTU1MWEiLCJpY2giOiIwIiwiaWRtIjoiMCIsImlhIjoiOjpmZmZmOjEwLjAuMC41IiwiYXB2IjoiISEwLjAiLCJhYm4iOiIxMDAwIiwibmJmIjoxNzQzNDY1MzY5LCJleHAiOjE3NDM0NjU0MjksImlhdCI6MTc0MzQ2NTM2OX0.YWdVfOL5hEZTrd4f4qkmPCPmUUlaiG7I2REW5H0p6Gw",
                 "Accept: application/json, text/plain, */*",
                 "Accept-Language: tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
                 "Connection: keep-alive"
@@ -104,16 +104,12 @@ jobs:
             }
 
             parse_str($decodedToken, $tokenParams);
-            $tokenParams['server_time'] = gmdate('m/d/Y h:i:s A', time() + 3 * 3600);
-            $tokenParams['client_ip'] = '176.88.30.202';
             
-            // Yeni token string'ini doğru şekilde oluştur
-            $newTokenString = 'server_time=' . urlencode($tokenParams['server_time']) . 
-                             '&hash_value=' . $tokenParams['hash_value'] . 
-                             '&validminutes=' . $tokenParams['validminutes'] . 
-                             '&id=' . $tokenParams['id'] . 
-                             '&client_ip=' . $tokenParams['client_ip'] . 
-                             '&checkip=' . $tokenParams['checkip'];
+            // Yeni zamanı ve IP'yi ayarla (Türkiye saati UTC+3)
+            $newServerTime = gmdate('m/d/Y h:i:s A', time() + 3 * 3600);
+            
+            // Yeni token string'ini MANUEL olarak oluştur (hiçbir encoding yapmadan)
+            $newTokenString = "server_time={$newServerTime}&hash_value={$tokenParams['hash_value']}&validminutes={$tokenParams['validminutes']}&id={$tokenParams['id']}&client_ip=176.88.30.202&checkip={$tokenParams['checkip']}";
             
             $newToken = base64_encode($newTokenString);
             
