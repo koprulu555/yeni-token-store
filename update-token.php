@@ -83,7 +83,7 @@ function updateToken() {
     // Token parametrelerini parse et
     parse_str($decodedToken, $tokenParams);
 
-    if (!isset($tokenParams['server_time']) || !isset($tokenParams['client_ip'])) {
+    if (!isset($tokenParams['server_time']) || !isset($tokenParams['client_ip']) || !isset($tokenParams['hash_value'])) {
         throw new Exception("Token parametreleri eksik: " . $decodedToken);
     }
 
@@ -91,14 +91,14 @@ function updateToken() {
     $tokenParams['server_time'] = gmdate('m/d/Y h:i:s A', time() + 3 * 3600); // Türkiye saati (UTC+3)
     $tokenParams['client_ip'] = '176.88.30.202'; // Sabit IP
     
-    // Yeni token string'ini manuel olarak oluştur (URL encoding yapmadan)
-    $newTokenString = '';
-    foreach ($tokenParams as $key => $value) {
-        if (!empty($newTokenString)) {
-            $newTokenString .= '&';
-        }
-        $newTokenString .= $key . '=' . $value;
-    }
+    // Yeni token string'ini doğru şekilde oluştur
+    // hash_value parametresini URL encode etmeden koruyoruz
+    $newTokenString = 'server_time=' . urlencode($tokenParams['server_time']) . 
+                     '&hash_value=' . $tokenParams['hash_value'] . 
+                     '&validminutes=' . $tokenParams['validminutes'] . 
+                     '&id=' . $tokenParams['id'] . 
+                     '&client_ip=' . $tokenParams['client_ip'] . 
+                     '&checkip=' . $tokenParams['checkip'];
     
     // Yeni token'i base64 ile encode et
     $newToken = base64_encode($newTokenString);
