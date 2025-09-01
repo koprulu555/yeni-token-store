@@ -107,14 +107,13 @@ jobs:
             $tokenParams['server_time'] = gmdate('m/d/Y h:i:s A', time() + 3 * 3600);
             $tokenParams['client_ip'] = '176.88.30.202';
             
-            // Yeni token string'ini manuel olarak oluştur (URL encoding yapmadan)
-            $newTokenString = '';
-            foreach ($tokenParams as $key => $value) {
-                if (!empty($newTokenString)) {
-                    $newTokenString .= '&';
-                }
-                $newTokenString .= $key . '=' . $value;
-            }
+            // Yeni token string'ini doğru şekilde oluştur
+            $newTokenString = 'server_time=' . urlencode($tokenParams['server_time']) . 
+                             '&hash_value=' . $tokenParams['hash_value'] . 
+                             '&validminutes=' . $tokenParams['validminutes'] . 
+                             '&id=' . $tokenParams['id'] . 
+                             '&client_ip=' . $tokenParams['client_ip'] . 
+                             '&checkip=' . $tokenParams['checkip'];
             
             $newToken = base64_encode($newTokenString);
             
@@ -126,6 +125,7 @@ jobs:
         try {
             $newToken = updateToken();
             echo "Token başarıyla güncellendi: " . $newToken . "\n";
+            echo "Decode edilmiş token: " . base64_decode($newToken) . "\n";
         } catch (Exception $e) {
             echo "HATA: " . $e->getMessage() . "\n";
             exit(1);
@@ -142,6 +142,8 @@ jobs:
         cat token.txt || echo "Token dosyası oluşturulamadı"
         echo -e "\nDosya boyutu:"
         ls -la token.txt || true
+        echo -e "\nDecode edilmiş token:"
+        base64 -d token.txt 2>/dev/null || echo "Token decode edilemedi"
 
     - name: Commit and push if changed
       run: |
