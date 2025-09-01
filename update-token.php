@@ -87,18 +87,13 @@ function updateToken() {
         throw new Exception("Token parametreleri eksik: " . $decodedToken);
     }
 
-    // Yeni zamanı ve IP'yi ayarla
-    $tokenParams['server_time'] = gmdate('m/d/Y h:i:s A', time() + 3 * 3600); // Türkiye saati (UTC+3)
-    $tokenParams['client_ip'] = '176.88.30.202'; // Sabit IP
+    // Yeni zamanı ve IP'yi ayarla (Türkiye saati UTC+3)
+    $newServerTime = gmdate('m/d/Y h:i:s A', time() + 3 * 3600);
+    $tokenParams['server_time'] = $newServerTime;
+    $tokenParams['client_ip'] = '176.88.30.202';
     
-    // Yeni token string'ini doğru şekilde oluştur
-    // hash_value parametresini URL encode etmeden koruyoruz
-    $newTokenString = 'server_time=' . urlencode($tokenParams['server_time']) . 
-                     '&hash_value=' . $tokenParams['hash_value'] . 
-                     '&validminutes=' . $tokenParams['validminutes'] . 
-                     '&id=' . $tokenParams['id'] . 
-                     '&client_ip=' . $tokenParams['client_ip'] . 
-                     '&checkip=' . $tokenParams['checkip'];
+    // Yeni token string'ini MANUEL olarak oluştur (hiçbir encoding yapmadan)
+    $newTokenString = "server_time={$newServerTime}&hash_value={$tokenParams['hash_value']}&validminutes={$tokenParams['validminutes']}&id={$tokenParams['id']}&client_ip=176.88.30.202&checkip={$tokenParams['checkip']}";
     
     // Yeni token'i base64 ile encode et
     $newToken = base64_encode($newTokenString);
